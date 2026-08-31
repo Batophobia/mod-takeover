@@ -2,11 +2,11 @@ const stage = document.getElementById("stage");
 const stageWrapper = document.getElementById("stageWrapper");
 const addTextButton = document.getElementById("addTextButton");
 const deleteButton = document.getElementById("deleteButton");
+const addImageButton = document.getElementById("addImageButton");
 
 const properties = document.getElementById("properties");
-const positionX = document.getElementById("positionX");
-const positionY = document.getElementById("positionY");
 const textContent = document.getElementById("textContent");
+const imageUrl = document.getElementById("imageUrl");
 
 let elements = {};
 let selectedElementId = null;
@@ -88,6 +88,14 @@ function renderElement(element) {
       "text-element",
       "editor-element"
     );
+  } else if (element.type === "image") {
+    domElement = document.createElement("img");
+    domElement.src = element.src;
+    domElement.classList.add(
+      "takeover-element",
+      "image-element",
+      "editor-element"
+    );
   } else {
     console.warn("Unknown element type:", element.type);
     return;
@@ -130,7 +138,7 @@ addTextButton.addEventListener("click", () => {
   renderAll();
 
   showProperties(element);
-  sendMessage("ADD_TEXT", element);
+  sendMessage("ADD_ELEMENT", element);
 });
 
 deleteButton.addEventListener("click", deleteSelectedElement);
@@ -181,13 +189,17 @@ function selectElement(element) {
 
 function showProperties(element) {
   properties.classList.remove("hidden");
-  positionX.value = element.x;
-  positionY.value = element.y;
+  textContent.parentElement.style.display = "none";
+  imageUrl.parentElement.style.display = "none";
 
   if (element.type === "text") {
+    textContent.parentElement.style.display = "block";
     textContent.value = element.text;
-  } else {
-    textContent.value = "";
+  }
+
+  if (element.type === "image") {
+    imageUrl.parentElement.style.display = "block";
+    imageUrl.value = element.src;
   }
 }
 
@@ -234,40 +246,13 @@ document.addEventListener("mousemove", (event) => {
 
 document.addEventListener("mouseup", () => { dragging = false; });
 
-positionX.addEventListener("change", () => {
-  if (!selectedElementId) {
-    return;
-  }
-  const element = elements[selectedElementId];
-  element.x = Number(positionX.value);
-
-  renderAll();
-  sendMessage("UPDATE_ELEMENT", {
-    id: element.id,
-    x: element.x
-  });
-});
-
-positionY.addEventListener("change", () => {
-  if (!selectedElementId) {
-    return;
-  }
-  const element = elements[selectedElementId];
-  element.y = Number(positionY.value);
-  renderAll();
-  sendMessage("UPDATE_ELEMENT", {
-    id: element.id,
-    y: element.y
-  });
-});
-
-textContent.addEventListener("onchange", () => {
+textContent.addEventListener("input", () => {
   if (!selectedElementId) {
     return;
   }
 
   const element = elements[selectedElementId];
-  if (element.type !== "text") {
+  if (!element || element.type !== "text") {
     return;
   }
 
@@ -276,6 +261,44 @@ textContent.addEventListener("onchange", () => {
   sendMessage("UPDATE_ELEMENT", {
     id: element.id,
     text: element.text
+  });
+});
+
+addImageButton.addEventListener("click", () => {
+  const id = crypto.randomUUID();
+  const element = {
+    id: id,
+    type: "image",
+    src: "",
+    x: 760,
+    y: 390,
+    width: 400,
+    height: 300
+  };
+
+  elements[id] = element;
+  selectedElementId = id;
+  renderAll();
+  showProperties(element);
+  sendMessage("ADD_ELEMENT", element);
+});
+
+imageUrl.addEventListener("change", () => {
+  if (!selectedElementId) {
+    return;
+  }
+
+  const element = elements[selectedElementId];
+  if (!element || element.type !== "image") {
+    return;
+  }
+
+  element.src = imageUrl.value;
+
+  renderAll();
+  sendMessage("UPDATE_ELEMENT", {
+    id: element.id,
+    src: element.src
   });
 });
 

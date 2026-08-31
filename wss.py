@@ -48,7 +48,7 @@ async def websocket_handler(request):
 
             print("Received:", data)
 
-            if data.get("type") == "ADD_TEXT":
+            if data.get("type") in ("ADD_ELEMENT", "ADD_ELEMENT"):
                 element = data.get("data")
                 if not element or "id" not in element:
                     continue

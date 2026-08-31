@@ -47,6 +47,11 @@ function renderElement(element) {
       domElement.textContent = element.text;
       domElement.classList.add("takeover-element", "text-element");
       break;
+    case "image":
+      domElement = document.createElement("img");
+      domElement.src = element.src;
+      domElement.classList.add("takeover-element", "image-element");
+      break;
     default:
       console.warn("Unknown element type:", element.type);
       return;
@@ -55,6 +60,11 @@ function renderElement(element) {
   domElement.dataset.id = element.id;
   domElement.style.left = `${element.x}px`;
   domElement.style.top = `${element.y}px`;
+  if (element.width)
+    domElement.style.width = `${element.width}px`;
+  if (element.height)
+    domElement.style.height = `${element.height}px`;
+
   stage.appendChild(domElement);
 }
 

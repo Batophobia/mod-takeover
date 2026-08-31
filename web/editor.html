@@ -13,6 +13,7 @@
   <div class="editor-container">
     <div class="editor-toolbar">
       <button id="addTextButton">Add Text</button>
+      <button id="addImageButton">Add Image</button>
       <button id="deleteButton">Delete Selected</button>
     </div>
 
@@ -22,19 +23,9 @@
 
     <div id="properties" class="properties hidden">
       <strong>Selected Element</strong>
-      <label>
-        X:
-        <input id="positionX" type="number">
-      </label>
-
-      <label>
-        Y:
-        <input id="positionY" type="number">
-      </label>
-
-      <label id="textProperty">
-        Text:
-        <input id="textContent" type="text">
+      <label id="textProperty">Text: <input id="textContent" type="text"></label>
+      <label id="imageProperty">Image URL:
+        <input id="imageUrl" type="url" placeholder="https://example.com/image.gif">
       </label>
     </div>
   </div>

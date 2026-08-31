@@ -46,7 +46,7 @@ body {
   top: 10px;
   z-index: 1000;
   padding: 8px;
-  background: white;
+  background: #444444;
   border-radius: 5px;
 }
 
@@ -54,6 +54,7 @@ body {
   padding: 6px 12px;
   margin-right: 5px;
   cursor: pointer;
+  background: #CCCCCC;
 }
 
 .editor-stage-wrapper {
