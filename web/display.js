@@ -8,9 +8,8 @@ function handleState(state) {
   renderAll();
 }
 
-function handleAddText(element) {
+function handleAddElement(element) {
   elements[element.id] = element;
-
   renderAll();
 }
 

@@ -14,6 +14,12 @@ let dragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
+let resizing = false;
+let resizeStartX = 0;
+let resizeStartY = 0;
+let resizeStartWidth = 0;
+let resizeStartHeight = 0;
+
 function resizeStage() {
   const availableWidth = window.innerWidth - 40;
   const availableHeight = window.innerHeight - 40;
@@ -40,7 +46,7 @@ function handleState(state) {
   renderAll();
 }
 
-function handleAddText(element) {
+function handleAddElement(element) {
   elements[element.id] = element;
   renderAll();
 }
@@ -89,13 +95,20 @@ function renderElement(element) {
       "editor-element"
     );
   } else if (element.type === "image") {
-    domElement = document.createElement("img");
-    domElement.src = element.src;
+    domElement = document.createElement("div");
     domElement.classList.add(
       "takeover-element",
       "image-element",
       "editor-element"
     );
+
+    const image = document.createElement("img");
+    image.src = element.src;
+    image.draggable = false;
+    image.style.width = "100%";
+    image.style.height = "100%";
+    image.style.display = "block";
+    domElement.appendChild(image);
   } else {
     console.warn("Unknown element type:", element.type);
     return;
@@ -118,6 +131,15 @@ function renderElement(element) {
   }
 
   domElement.addEventListener("mousedown", beginDrag);
+
+  if (element.type === "image" && element.id === selectedElementId) {
+    const resizeHandle = document.createElement("div");
+    resizeHandle.classList.add("resize-handle");
+    resizeHandle.dataset.id = element.id;
+    resizeHandle.addEventListener("mousedown", beginResize);
+    domElement.appendChild(resizeHandle);
+  }
+
   stage.appendChild(domElement);
 }
 
@@ -220,6 +242,33 @@ function beginDrag(event) {
 }
 
 document.addEventListener("mousemove", (event) => {
+  if (resizing) {
+    const element = elements[selectedElementId];
+    if (!element) {
+      return;
+    }
+
+    const rect = stage.getBoundingClientRect();
+    const scale = rect.width / 1920;
+
+    const mouseDeltaX = (event.clientX - resizeStartX) / scale;
+    const mouseDeltaY = (event.clientY - resizeStartY) / scale;
+
+    const width = Math.max(50, resizeStartWidth + mouseDeltaX);
+    const aspectRatio = resizeStartWidth / resizeStartHeight;
+    const height = width / aspectRatio;
+    element.width = Math.round(width);
+    element.height = Math.round(height);
+
+    renderAll();
+    sendMessage("UPDATE_ELEMENT", {
+      id: element.id,
+      width: element.width,
+      height: element.height
+    });
+    return;
+  }
+
   if (!dragging) {
     return;
   }
@@ -244,7 +293,10 @@ document.addEventListener("mousemove", (event) => {
   });
 });
 
-document.addEventListener("mouseup", () => { dragging = false; });
+document.addEventListener("mouseup", () => {
+  dragging = false;
+  resizing = false;
+});
 
 textContent.addEventListener("input", () => {
   if (!selectedElementId) {
@@ -301,5 +353,24 @@ imageUrl.addEventListener("change", () => {
     src: element.src
   });
 });
+
+function beginResize(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const id = event.currentTarget.dataset.id;
+  const element = elements[id];
+  if (!element) {
+    return;
+  }
+  selectedElementId = id;
+
+  resizeStartX = event.clientX;
+  resizeStartY = event.clientY;
+  resizeStartWidth = element.width;
+  resizeStartHeight = element.height;
+
+  resizing = true;
+}
 
 connectWebSocket();

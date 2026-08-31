@@ -59,11 +59,8 @@ function handleMessage(message) {
       handleState?.(message.data);
       break;
     case "ADD_ELEMENT":
-      handleAddText?.(message.data);
-      break;
-    case "ADD_ELEMENT":
-      if (typeof handleAddImage === "function") {
-        handleAddImage(message.data);
+      if (typeof handleAddElement === "function") {
+        handleAddElement(message.data);
       }
       break;
     case "UPDATE_ELEMENT":
