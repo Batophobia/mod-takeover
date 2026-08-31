@@ -57,3 +57,5 @@ function renderElement(element) {
   domElement.style.top = `${element.y}px`;
   stage.appendChild(domElement);
 }
+
+connectWebSocket();

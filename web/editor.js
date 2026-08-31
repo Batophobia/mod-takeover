@@ -212,3 +212,5 @@ positionY.addEventListener("change", () => {
     y: element.y
   });
 });
+
+connectWebSocket();

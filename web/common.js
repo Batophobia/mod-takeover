@@ -47,21 +47,10 @@ function sendMessage(type, data = {}) {
   }));
 }
 
-function handleMessage(message) {
-  console.log("Received message:", message);
-
-  if (message.type === "STATE") {
-    handleState(message.data);
-  } else {
-    console.warn("Unknown message type:", message.type);
-  }
-}
-
 function handleState(state) {
   console.log("Received state:", state);
 }
 
-connectWebSocket();
 function handleMessage(message) {
   console.log("Received message:", message);
 
@@ -82,5 +71,3 @@ function handleMessage(message) {
       console.warn("Unknown message type:", message.type);
   }
 }
-
-connectWebSocket();
