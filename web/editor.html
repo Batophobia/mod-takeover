@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mod Takeover Editor</title>
+  <link rel="stylesheet" href="/common.css">
+</head>
+
+<body class="editor-body">
+  <div class="editor-container">
+    <div class="editor-toolbar">
+      <button id="addTextButton">
+        Add Text
+      </button>
+    </div>
+
+    <div id="stageWrapper" class="editor-stage-wrapper">
+      <main id="stage"></main>
+    </div>
+
+    <div id="properties" class="properties hidden">
+      <strong>Selected Element</strong>
+      <label>
+        X:
+        <input id="positionX" type="number">
+      </label>
+
+      <label>
+        Y:
+        <input id="positionY" type="number">
+      </label>
+    </div>
+  </div>
+
+  <script src="/common.js"></script>
+  <script src="/editor.js"></script>
+</body>
+
+</html>
