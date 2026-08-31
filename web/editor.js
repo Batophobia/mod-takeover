@@ -1,10 +1,12 @@
 const stage = document.getElementById("stage");
 const stageWrapper = document.getElementById("stageWrapper");
-
 const addTextButton = document.getElementById("addTextButton");
+const deleteButton = document.getElementById("deleteButton");
+
 const properties = document.getElementById("properties");
 const positionX = document.getElementById("positionX");
 const positionY = document.getElementById("positionY");
+const textContent = document.getElementById("textContent");
 
 let elements = {};
 let selectedElementId = null;
@@ -131,6 +133,46 @@ addTextButton.addEventListener("click", () => {
   sendMessage("ADD_TEXT", element);
 });
 
+deleteButton.addEventListener("click", deleteSelectedElement);
+
+document.addEventListener("keydown", (event) => {
+  if (
+    event.key !== "Delete" &&
+    event.key !== "Backspace"
+  ) {
+    return;
+  }
+
+  if (!selectedElementId) {
+    return;
+  }
+
+  // Don't delete an element while typing
+  // inside an input field.
+  if (
+    document.activeElement.tagName === "INPUT" ||
+    document.activeElement.tagName === "TEXTAREA"
+  ) {
+    return;
+  }
+
+  deleteSelectedElement();
+});
+
+function deleteSelectedElement() {
+  if (!selectedElementId) {
+    return;
+  }
+
+  const id = selectedElementId;
+  delete elements[id];
+  selectedElementId = null;
+  properties.classList.add("hidden");
+
+  renderAll();
+  sendMessage("DELETE_ELEMENT", { id: id });
+}
+
 function selectElement(element) {
   selectedElementId = element.id;
   showProperties(element);
@@ -141,6 +183,12 @@ function showProperties(element) {
   properties.classList.remove("hidden");
   positionX.value = element.x;
   positionY.value = element.y;
+
+  if (element.type === "text") {
+    textContent.value = element.text;
+  } else {
+    textContent.value = "";
+  }
 }
 
 function beginDrag(event) {
@@ -210,6 +258,24 @@ positionY.addEventListener("change", () => {
   sendMessage("UPDATE_ELEMENT", {
     id: element.id,
     y: element.y
+  });
+});
+
+textContent.addEventListener("onchange", () => {
+  if (!selectedElementId) {
+    return;
+  }
+
+  const element = elements[selectedElementId];
+  if (element.type !== "text") {
+    return;
+  }
+
+  element.text = textContent.value;
+  renderAll();
+  sendMessage("UPDATE_ELEMENT", {
+    id: element.id,
+    text: element.text
   });
 });
 

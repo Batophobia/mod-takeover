@@ -12,9 +12,8 @@
 <body class="editor-body">
   <div class="editor-container">
     <div class="editor-toolbar">
-      <button id="addTextButton">
-        Add Text
-      </button>
+      <button id="addTextButton">Add Text</button>
+      <button id="deleteButton">Delete Selected</button>
     </div>
 
     <div id="stageWrapper" class="editor-stage-wrapper">
@@ -31,6 +30,11 @@
       <label>
         Y:
         <input id="positionY" type="number">
+      </label>
+
+      <label id="textProperty">
+        Text:
+        <input id="textContent" type="text">
       </label>
     </div>
   </div>
