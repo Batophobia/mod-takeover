@@ -3,6 +3,9 @@ const stageWrapper = document.getElementById("stageWrapper");
 const addTextButton = document.getElementById("addTextButton");
 const deleteButton = document.getElementById("deleteButton");
 const addImageButton = document.getElementById("addImageButton");
+const drawButton = document.getElementById("drawButton");
+const brushColor = document.getElementById("brushColor");
+const brushSize = document.getElementById("brushSize");
 
 const properties = document.getElementById("properties");
 const textContent = document.getElementById("textContent");
@@ -19,6 +22,10 @@ let resizeStartX = 0;
 let resizeStartY = 0;
 let resizeStartWidth = 0;
 let resizeStartHeight = 0;
+
+let drawing = false;
+let drawMode = false;
+let currentStroke = null;
 
 function resizeStage() {
   const availableWidth = window.innerWidth - 40;
@@ -345,13 +352,50 @@ imageUrl.addEventListener("change", () => {
     return;
   }
 
-  element.src = imageUrl.value;
+  const newUrl = imageUrl.value.trim();
+  element.src = newUrl;
 
-  renderAll();
-  sendMessage("UPDATE_ELEMENT", {
-    id: element.id,
-    src: element.src
-  });
+  if (!newUrl) {
+    renderAll();
+    sendMessage("UPDATE_ELEMENT", {
+      id: element.id,
+      src: element.src
+    });
+    return;
+  }
+
+  const image = new Image();
+  image.onload = () => {
+    const maxWidth = 600;
+    const maxHeight = 600;
+
+    const scale = Math.min(
+      maxWidth / image.naturalWidth,
+      maxHeight / image.naturalHeight,
+      1
+    );
+    element.width = Math.round(image.naturalWidth * scale);
+    element.height = Math.round(image.naturalHeight * scale);
+
+    renderAll();
+    sendMessage("UPDATE_ELEMENT", {
+      id: element.id,
+      src: element.src,
+      width: element.width,
+      height: element.height
+    });
+  };
+
+  image.onerror = () => {
+    console.error("Unable to load image:", newUrl);
+    renderAll();
+    sendMessage("UPDATE_ELEMENT", {
+      id: element.id,
+      src: element.src
+    });
+  };
+
+  image.src = newUrl;
 });
 
 function beginResize(event) {
