@@ -4,6 +4,7 @@ const addTextButton = document.getElementById("addTextButton");
 const deleteButton = document.getElementById("deleteButton");
 const addImageButton = document.getElementById("addImageButton");
 const drawButton = document.getElementById("drawButton");
+const undoButton = document.getElementById("undoButton");
 
 const properties = document.getElementById("properties");
 const textContent = document.getElementById("textContent");
@@ -225,7 +226,7 @@ function createDrawingElement(element) {
   const svgNamespace = "http://www.w3.org/2000/svg";
 
   const container = document.createElement("div");
-  container.classList.add("drawing-element");
+  container.classList.add("takeover-element", "drawing-element", "editor-element");
 
   const svg = document.createElementNS(svgNamespace, "svg");
   svg.setAttribute("viewBox", `0 0 ${element.width} ${element.height}`);
@@ -241,7 +242,7 @@ function createDrawingElement(element) {
 }
 
 addTextButton.addEventListener("click", () => {
-  const id = crypto.randomUUID();
+  const id = Date.now();
   const element = {
     id: id,
     type: "text",
@@ -438,8 +439,22 @@ textContent.addEventListener("input", () => {
   });
 });
 
+brushColor.addEventListener("input", () => {
+  if (!selectedElementId) return;
+
+  const element = elements[selectedElementId];
+  if (!element || element.type !== "text") return;
+
+  element.color = brushColor.value;
+  renderAll();
+  sendMessage("UPDATE_ELEMENT", {
+    id: element.id,
+    color: element.color
+  });
+});
+
 addImageButton.addEventListener("click", () => {
-  const id = crypto.randomUUID();
+  const id = Date.now();
   const element = {
     id: id,
     type: "image",
@@ -541,6 +556,7 @@ drawButton.addEventListener("click", () => {
     brushColor.parentElement.style.display = "none";
     brushSize.parentElement.style.display = "none";
     brushPreview.style.display = "none";
+    undoButton.style.display = "none";
   } else {
     startDrawing();
     properties.classList.remove("hidden");
@@ -549,13 +565,14 @@ drawButton.addEventListener("click", () => {
     brushColor.parentElement.style.display = "block";
     brushSize.parentElement.style.display = "block";
     brushPreview.style.display = "block";
+    undoButton.style.display = "";
   }
 });
 
 function startDrawing() {
   drawMode = true;
   currentDrawing = {
-    id: crypto.randomUUID(),
+    id: Date.now(),
     type: "drawing",
     x: 0,
     y: 0,
@@ -595,6 +612,16 @@ function finishDrawing() {
   showProperties(elements[selectedElementId]);
   renderAll();
 }
+
+function undoStroke() {
+  if (!drawMode || !currentDrawing) return;
+  if (drawing) return;
+  if (currentDrawing.strokes.length === 0) return;
+
+  currentDrawing.strokes.pop();
+  renderAll();
+}
+undoButton.addEventListener("click", undoStroke);
 
 function getStagePoint(event) {
   const rect = stage.getBoundingClientRect();
