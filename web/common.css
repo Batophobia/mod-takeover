@@ -135,6 +135,10 @@ body {
   color: #EEEEEE;
 }
 
+.drawing-preview {
+  pointer-events: none;
+}
+
 .drawing-element {
   position: absolute;
   box-sizing: border-box;

@@ -572,7 +572,7 @@ function finishDrawing() {
 }
 
 function getStagePoint(event) {
-  const rect = stage.getBoundingClientRect();
+  const rect = stageWrapper.getBoundingClientRect();
   const scale = rect.width / 1920;
 
   return {
@@ -607,7 +607,7 @@ function finalizeDrawingBounds(drawingElement) {
 
   if (allPoints.length === 0) return;
 
-  const padding = 10;
+  const padding = Math.max(...drawingElement.strokes.map(stroke => stroke.width / 2));
 
   const minX = Math.min(...allPoints.map(point => point.x));
   const minY = Math.min(...allPoints.map(point => point.y));
