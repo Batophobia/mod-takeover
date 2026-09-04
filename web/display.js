@@ -44,6 +44,7 @@ function renderElement(element) {
     case "text":
       domElement = document.createElement("div");
       domElement.textContent = element.text;
+      domElement.style.color = element.color;
       domElement.classList.add("takeover-element", "text-element");
       break;
     case "image":
@@ -53,6 +54,7 @@ function renderElement(element) {
       break;
     case "drawing":
       domElement = createDrawingElement(element);
+      break;
     default:
       console.warn("Unknown element type:", element.type);
       return;
@@ -114,7 +116,6 @@ function createDrawingElement(element) {
   container.classList.add("drawing-element");
 
   const svg = document.createElementNS(svgNamespace, "svg");
-
   svg.setAttribute("viewBox", `0 0 ${element.width} ${element.height}`);
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");

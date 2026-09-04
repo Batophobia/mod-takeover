@@ -4,13 +4,13 @@ const addTextButton = document.getElementById("addTextButton");
 const deleteButton = document.getElementById("deleteButton");
 const addImageButton = document.getElementById("addImageButton");
 const drawButton = document.getElementById("drawButton");
-const brushColor = document.getElementById("brushColor");
-const brushSize = document.getElementById("brushSize");
-const brushPreview = document.getElementById("brushPreview");
 
 const properties = document.getElementById("properties");
 const textContent = document.getElementById("textContent");
 const imageUrl = document.getElementById("imageUrl");
+const brushColor = document.getElementById("brushColor");
+const brushSize = document.getElementById("brushSize");
+const brushPreview = document.getElementById("brushPreview");
 
 let elements = {};
 let selectedElementId = null;
@@ -112,6 +112,10 @@ function renderAll() {
     const preview = createDrawingElement(previewDrawing);
     preview.id = "drawing-preview";
     preview.classList.add("drawing-preview");
+    preview.style.left = `${currentDrawing.x}px`;
+    preview.style.top = `${currentDrawing.y}px`;
+    preview.style.width = `${currentDrawing.width}px`;
+    preview.style.height = `${currentDrawing.height}px`;
     stage.appendChild(preview);
   }
 }
@@ -122,6 +126,7 @@ function renderElement(element) {
   if (element.type === "text") {
     domElement = document.createElement("div");
     domElement.textContent = element.text;
+    domElement.style.color = element.color;
     domElement.classList.add(
       "takeover-element",
       "text-element",
@@ -240,11 +245,12 @@ addTextButton.addEventListener("click", () => {
   const element = {
     id: id,
     type: "text",
-    text: "Hello, world!",
+    text: ".",
     x: 960,
     y: 540,
     width: 0,
-    height: 0
+    height: 0,
+    color: "#CCCCCC"
   };
 
   elements[id] = element;
@@ -305,10 +311,15 @@ function showProperties(element) {
   properties.classList.remove("hidden");
   textContent.parentElement.style.display = "none";
   imageUrl.parentElement.style.display = "none";
+  brushColor.parentElement.style.display = "none";
+  brushSize.parentElement.style.display = "none";
+  brushPreview.style.display = "none";
 
   if (element.type === "text") {
     textContent.parentElement.style.display = "block";
     textContent.value = element.text;
+    brushColor.parentElement.style.display = "block";
+    brushColor.value = element.color;
   }
 
   if (element.type === "image") {
@@ -418,10 +429,12 @@ textContent.addEventListener("input", () => {
   }
 
   element.text = textContent.value;
+  element.color = brushColor.value;
   renderAll();
   sendMessage("UPDATE_ELEMENT", {
     id: element.id,
-    text: element.text
+    text: element.text,
+    color: element.color
   });
 });
 
@@ -522,8 +535,20 @@ function beginResize(event) {
 drawButton.addEventListener("click", () => {
   if (drawMode) {
     finishDrawing();
+    properties.classList.add("hidden");
+    textContent.parentElement.style.display = "none";
+    imageUrl.parentElement.style.display = "none";
+    brushColor.parentElement.style.display = "none";
+    brushSize.parentElement.style.display = "none";
+    brushPreview.style.display = "none";
   } else {
     startDrawing();
+    properties.classList.remove("hidden");
+    textContent.parentElement.style.display = "none";
+    imageUrl.parentElement.style.display = "none";
+    brushColor.parentElement.style.display = "block";
+    brushSize.parentElement.style.display = "block";
+    brushPreview.style.display = "block";
   }
 });
 
