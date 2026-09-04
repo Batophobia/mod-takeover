@@ -109,18 +109,22 @@ function pointsToPath(points) {
 
 function createDrawingElement(element) {
   const svgNamespace = "http://www.w3.org/2000/svg";
+
+  const container = document.createElement("div");
+  container.classList.add("drawing-element");
+
   const svg = document.createElementNS(svgNamespace, "svg");
 
-  svg.classList.add("drawing-element");
-  svg.setAttribute("viewBox", "0 0 1920 1080");
-  svg.setAttribute("width", "1920");
-  svg.setAttribute("height", "1080");
+  svg.setAttribute("viewBox", `0 0 ${element.width} ${element.height}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
 
   for (const stroke of element.strokes) {
     renderStroke(svg, stroke);
   }
 
-  return svg;
+  container.appendChild(svg);
+  return container;
 }
 
 connectWebSocket();

@@ -6,6 +6,7 @@ const addImageButton = document.getElementById("addImageButton");
 const drawButton = document.getElementById("drawButton");
 const brushColor = document.getElementById("brushColor");
 const brushSize = document.getElementById("brushSize");
+const brushPreview = document.getElementById("brushPreview");
 
 const properties = document.getElementById("properties");
 const textContent = document.getElementById("textContent");
@@ -26,7 +27,7 @@ let resizeStartHeight = 0;
 let drawing = false;
 let drawMode = false;
 let currentStroke = null;
-let drawingElementId = null;
+let currentDrawing = null;
 
 function resizeStage() {
   const availableWidth = window.innerWidth - 40;
@@ -84,23 +85,33 @@ function handleDeleteElement(data) {
   renderAll();
 }
 
+function updateBrushPreview() {
+  const size = Number(brushSize.value);
+
+  brushPreview.style.width = `${size}px`;
+  brushPreview.style.height = `${size}px`;
+  brushPreview.style.backgroundColor = brushColor.value;
+}
+brushSize.addEventListener("input", updateBrushPreview);
+brushColor.addEventListener("input", updateBrushPreview);
+updateBrushPreview();
+
 function renderAll() {
   stage.replaceChildren();
   for (const id in elements) {
     renderElement(elements[id]);
   }
 
-  if (currentStroke) {
-    const previewElement = {
-      id: "drawing-preview",
-      type: "drawing",
-      strokes: [currentStroke]
-    };
+  if (currentDrawing) {
+    const previewDrawing = { ...currentDrawing, strokes: [...currentDrawing.strokes] };
 
-    const preview = createDrawingElement(previewElement);
+    if (currentStroke) {
+      previewDrawing.strokes.push(currentStroke);
+    }
+
+    const preview = createDrawingElement(previewDrawing);
     preview.id = "drawing-preview";
     preview.classList.add("drawing-preview");
-
     stage.appendChild(preview);
   }
 }
@@ -207,43 +218,21 @@ function pointsToPath(points) {
 
 function createDrawingElement(element) {
   const svgNamespace = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNamespace, "svg");
 
-  svg.classList.add("drawing-element");
-  svg.setAttribute("viewBox", "0 0 1920 1080");
-  svg.setAttribute("width", "1920");
-  svg.setAttribute("height", "1080");
+  const container = document.createElement("div");
+  container.classList.add("drawing-element");
+
+  const svg = document.createElementNS(svgNamespace, "svg");
+  svg.setAttribute("viewBox", `0 0 ${element.width} ${element.height}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
 
   for (const stroke of element.strokes) {
     renderStroke(svg, stroke);
   }
 
-  return svg;
-}
-
-function getDrawingElement() {
-  if (drawingElementId && elements[drawingElementId]) {
-    return elements[drawingElementId];
-  }
-
-  for (const element of Object.values(elements)) {
-    if (element.type === "drawing") {
-      drawingElementId = element.id;
-      return element;
-    }
-  }
-
-  const drawingElement = {
-    id: crypto.randomUUID(),
-    type: "drawing",
-    strokes: []
-  };
-
-  elements[drawingElement.id] = drawingElement;
-  drawingElementId = drawingElement.id;
-
-  sendMessage("ADD_ELEMENT", drawingElement);
-  return drawingElement;
+  container.appendChild(svg);
+  return container;
 }
 
 addTextButton.addEventListener("click", () => {
@@ -407,15 +396,10 @@ document.addEventListener("mousemove", (event) => {
 document.addEventListener("mouseup", () => {
   if (drawing && currentStroke) {
     drawing = false;
-    const drawingElement = getDrawingElement();
-    drawingElement.strokes.push(currentStroke);
-
+    if (currentDrawing) {
+      currentDrawing.strokes.push(currentStroke);
+    }
     currentStroke = null;
-    sendMessage("UPDATE_ELEMENT", {
-      id: drawingElement.id,
-      strokes: drawingElement.strokes
-    });
-
     renderAll();
   }
 
@@ -536,16 +520,56 @@ function beginResize(event) {
 }
 
 drawButton.addEventListener("click", () => {
-  drawMode = !drawMode;
-
-  drawButton.classList.toggle("active", drawMode);
-  stage.classList.toggle("draw-mode", drawMode);
-
   if (drawMode) {
-    selectedElementId = null;
-    renderAll();
+    finishDrawing();
+  } else {
+    startDrawing();
   }
 });
+
+function startDrawing() {
+  drawMode = true;
+  currentDrawing = {
+    id: crypto.randomUUID(),
+    type: "drawing",
+    x: 0,
+    y: 0,
+    width: 1920,
+    height: 1080,
+    strokes: []
+  };
+
+  selectedElementId = null;
+
+  drawButton.textContent = "Finish";
+  drawButton.classList.add("active");
+  stage.classList.add("draw-mode");
+
+  renderAll();
+}
+
+function finishDrawing() {
+  drawMode = false;
+  stage.classList.remove("draw-mode");
+  drawButton.classList.remove("active");
+  drawButton.textContent = "Draw";
+
+  if (!currentDrawing || currentDrawing.strokes.length === 0) {
+    currentDrawing = null;
+    renderAll();
+    return;
+  }
+
+  finalizeDrawingBounds(currentDrawing);
+
+  elements[currentDrawing.id] = currentDrawing;
+  selectedElementId = currentDrawing.id;
+
+  sendMessage("ADD_ELEMENT", currentDrawing);
+  currentDrawing = null;
+  showProperties(elements[selectedElementId]);
+  renderAll();
+}
 
 function getStagePoint(event) {
   const rect = stage.getBoundingClientRect();
@@ -576,6 +600,35 @@ function beginDrawing(event) {
   };
 
   renderAll();
+}
+
+function finalizeDrawingBounds(drawingElement) {
+  const allPoints = drawingElement.strokes.flatMap(stroke => stroke.points);
+
+  if (allPoints.length === 0) return;
+
+  const padding = 10;
+
+  const minX = Math.min(...allPoints.map(point => point.x));
+  const minY = Math.min(...allPoints.map(point => point.y));
+  const maxX = Math.max(...allPoints.map(point => point.x));
+  const maxY = Math.max(...allPoints.map(point => point.y));
+
+  drawingElement.x = Math.max(0, minX - padding);
+  drawingElement.y = Math.max(0, minY - padding);
+
+  drawingElement.width =
+    Math.min(1920, maxX + padding) - drawingElement.x;
+
+  drawingElement.height =
+    Math.min(1080, maxY + padding) - drawingElement.y;
+
+  for (const stroke of drawingElement.strokes) {
+    for (const point of stroke.points) {
+      point.x -= drawingElement.x;
+      point.y -= drawingElement.y;
+    }
+  }
 }
 
 connectWebSocket();
