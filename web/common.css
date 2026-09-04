@@ -130,3 +130,27 @@ body {
   cursor: nwse-resize;
   z-index: 10;
 }
+
+.editor-toolbar label {
+  color: #EEEEEE;
+}
+
+.drawing-element {
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  width: 1920px;
+  height: 1080px;
+
+  pointer-events: none;
+}
+
+.draw-mode {
+  cursor: crosshair;
+}
+
+.active {
+  font-weight: bold;
+}

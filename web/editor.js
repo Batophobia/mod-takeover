@@ -26,6 +26,7 @@ let resizeStartHeight = 0;
 let drawing = false;
 let drawMode = false;
 let currentStroke = null;
+let drawingElementId = null;
 
 function resizeStage() {
   const availableWidth = window.innerWidth - 40;
@@ -88,6 +89,20 @@ function renderAll() {
   for (const id in elements) {
     renderElement(elements[id]);
   }
+
+  if (currentStroke) {
+    const previewElement = {
+      id: "drawing-preview",
+      type: "drawing",
+      strokes: [currentStroke]
+    };
+
+    const preview = createDrawingElement(previewElement);
+    preview.id = "drawing-preview";
+    preview.classList.add("drawing-preview");
+
+    stage.appendChild(preview);
+  }
 }
 
 function renderElement(element) {
@@ -116,6 +131,8 @@ function renderElement(element) {
     image.style.height = "100%";
     image.style.display = "block";
     domElement.appendChild(image);
+  } else if (element.type === "drawing") {
+    domElement = createDrawingElement(element);
   } else {
     console.warn("Unknown element type:", element.type);
     return;
@@ -148,6 +165,85 @@ function renderElement(element) {
   }
 
   stage.appendChild(domElement);
+}
+
+function renderStroke(svg, stroke) {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  if (!stroke.points || stroke.points.length === 0) return;
+
+  if (stroke.points.length === 1) {
+    const point = stroke.points[0];
+    const circle = document.createElementNS(svgNamespace, "circle");
+
+    circle.setAttribute("cx", point.x);
+    circle.setAttribute("cy", point.y);
+    circle.setAttribute("r", stroke.size / 2);
+    circle.setAttribute("fill", stroke.color);
+    svg.appendChild(circle);
+
+    return;
+  }
+
+  const path = document.createElementNS(svgNamespace, "path");
+
+  path.setAttribute("d", pointsToPath(stroke.points));
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", stroke.color);
+  path.setAttribute("stroke-width", stroke.size);
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(path);
+}
+
+function pointsToPath(points) {
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+
+  return path;
+}
+
+function createDrawingElement(element) {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNamespace, "svg");
+
+  svg.classList.add("drawing-element");
+  svg.setAttribute("viewBox", "0 0 1920 1080");
+  svg.setAttribute("width", "1920");
+  svg.setAttribute("height", "1080");
+
+  for (const stroke of element.strokes) {
+    renderStroke(svg, stroke);
+  }
+
+  return svg;
+}
+
+function getDrawingElement() {
+  if (drawingElementId && elements[drawingElementId]) {
+    return elements[drawingElementId];
+  }
+
+  for (const element of Object.values(elements)) {
+    if (element.type === "drawing") {
+      drawingElementId = element.id;
+      return element;
+    }
+  }
+
+  const drawingElement = {
+    id: crypto.randomUUID(),
+    type: "drawing",
+    strokes: []
+  };
+
+  elements[drawingElement.id] = drawingElement;
+  drawingElementId = drawingElement.id;
+
+  sendMessage("ADD_ELEMENT", drawingElement);
+  return drawingElement;
 }
 
 addTextButton.addEventListener("click", () => {
@@ -249,6 +345,14 @@ function beginDrag(event) {
 }
 
 document.addEventListener("mousemove", (event) => {
+  if (drawing && currentStroke) {
+    const point = getStagePoint(event);
+    currentStroke.points.push(point);
+
+    renderAll();
+    return;
+  }
+
   if (resizing) {
     const element = elements[selectedElementId];
     if (!element) {
@@ -301,6 +405,20 @@ document.addEventListener("mousemove", (event) => {
 });
 
 document.addEventListener("mouseup", () => {
+  if (drawing && currentStroke) {
+    drawing = false;
+    const drawingElement = getDrawingElement();
+    drawingElement.strokes.push(currentStroke);
+
+    currentStroke = null;
+    sendMessage("UPDATE_ELEMENT", {
+      id: drawingElement.id,
+      strokes: drawingElement.strokes
+    });
+
+    renderAll();
+  }
+
   dragging = false;
   resizing = false;
 });
@@ -415,6 +533,49 @@ function beginResize(event) {
   resizeStartHeight = element.height;
 
   resizing = true;
+}
+
+drawButton.addEventListener("click", () => {
+  drawMode = !drawMode;
+
+  drawButton.classList.toggle("active", drawMode);
+  stage.classList.toggle("draw-mode", drawMode);
+
+  if (drawMode) {
+    selectedElementId = null;
+    renderAll();
+  }
+});
+
+function getStagePoint(event) {
+  const rect = stage.getBoundingClientRect();
+  const scale = rect.width / 1920;
+
+  return {
+    x: Math.round((event.clientX - rect.left) / scale),
+    y: Math.round((event.clientY - rect.top) / scale)
+  };
+}
+
+stage.addEventListener("mousedown", beginDrawing);
+
+function beginDrawing(event) {
+  if (!drawMode) return;
+
+  if (event.button !== 0) return;
+
+  event.preventDefault();
+
+  const point = getStagePoint(event);
+  drawing = true;
+
+  currentStroke = {
+    color: brushColor.value,
+    size: Number(brushSize.value),
+    points: [point]
+  };
+
+  renderAll();
 }
 
 connectWebSocket();

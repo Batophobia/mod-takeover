@@ -51,6 +51,8 @@ function renderElement(element) {
       domElement.src = element.src;
       domElement.classList.add("takeover-element", "image-element");
       break;
+    case "drawing":
+      domElement = createDrawingElement(element);
     default:
       console.warn("Unknown element type:", element.type);
       return;
@@ -65,6 +67,60 @@ function renderElement(element) {
     domElement.style.height = `${element.height}px`;
 
   stage.appendChild(domElement);
+}
+
+function renderStroke(svg, stroke) {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  if (!stroke.points || stroke.points.length === 0) return;
+
+  if (stroke.points.length === 1) {
+    const point = stroke.points[0];
+    const circle = document.createElementNS(svgNamespace, "circle");
+
+    circle.setAttribute("cx", point.x);
+    circle.setAttribute("cy", point.y);
+    circle.setAttribute("r", stroke.size / 2);
+    circle.setAttribute("fill", stroke.color);
+    svg.appendChild(circle);
+
+    return;
+  }
+
+  const path = document.createElementNS(svgNamespace, "path");
+
+  path.setAttribute("d", pointsToPath(stroke.points));
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", stroke.color);
+  path.setAttribute("stroke-width", stroke.size);
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(path);
+}
+
+function pointsToPath(points) {
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+
+  return path;
+}
+
+function createDrawingElement(element) {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNamespace, "svg");
+
+  svg.classList.add("drawing-element");
+  svg.setAttribute("viewBox", "0 0 1920 1080");
+  svg.setAttribute("width", "1920");
+  svg.setAttribute("height", "1080");
+
+  for (const stroke of element.strokes) {
+    renderStroke(svg, stroke);
+  }
+
+  return svg;
 }
 
 connectWebSocket();
